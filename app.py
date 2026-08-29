@@ -1,15 +1,29 @@
 import datetime
 import os
+import smtplib
+from email.mime.image import MIMEImage
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 
 DATA_FILE = "sen_mid2_2_scores.csv"
+UPLOAD_DIR = "uploaded_photos"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# 중2반 / 중2-2 학생 명단
-STUDENTS = ["김수연", "최윤우", "주지원", "백서윤"]
+# 🔒 선생님 전용 비밀번호 (원하시는 비밀번호로 변경해서 사용하세요)
+TEACHER_PASSWORD = "1234"
 
-# 0021 ~ 0076 문항별 선지 및 정답 데이터 (주관식은 5지 선다 변환)
+# ✉️ 이메일 알림 설정 (Gmail)
+SENDER_EMAIL = "pend9494@gmail.com"  # 발송용 Gmail 주소
+SENDER_PASSWORD = "gson fpcr mlcz kzfy"  # Gmail 앱 비밀번호 (16자리)
+RECEIVER_EMAIL = "pend9494@gmail.com"  # 선생님 이메일 주소
+
+# 가락고반 / 중2-2 학생 명단
+STUDENTS = ["김수연", "백서윤", "주지원", "최윤우"]
+
+# 0021 ~ 0076 문항 데이터
 QUESTIONS = {
     "0021": {
         "options": [
@@ -246,6 +260,9 @@ QUESTIONS = {
     },
 }
 
+RANGE_PART1 = [f"{i:04d}" for i in range(21, 51)]
+RANGE_PART2 = [f"{i:04d}" for i in range(51, 77)]
+
 
 def load_data():
   if os.path.exists(DATA_FILE):
@@ -255,11 +272,12 @@ def load_data():
         columns=[
             "제출일시",
             "학생명",
-            "교재명",
+            "과제범위",
             "맞은개수",
             "전체문항",
             "환산점수",
             "오답문항",
+            "사진경로",
         ]
     )
 
@@ -268,35 +286,107 @@ def save_data(df):
   df.to_csv(DATA_FILE, index=False)
 
 
+def send_email_notification(
+    student_name,
+    range_title,
+    score,
+    correct_count,
+    total_q,
+    wrong_str,
+    photo_path=None,
+):
+  if (
+      SENDER_EMAIL == "your_email@gmail.com"
+      or SENDER_PASSWORD == "your_app_password"
+  ):
+    return
+
+  try:
+    msg = MIMEMultipart()
+    msg["From"] = SENDER_EMAIL
+    msg["To"] = RECEIVER_EMAIL
+    msg["Subject"] = (
+        f"[과제 제출 알림] {student_name} 학생 - {range_title} ({score}점)"
+    )
+
+    body = f"""
+    안녕하세요 박지호 선생님,
+
+    {student_name} 학생이 과제 답안을 제출했습니다.
+
+    ■ 학생명: {student_name}
+    ■ 과제 범위: {range_title}
+    ■ 맞은 개수: {correct_count} / {total_q} 개
+    ■ 환산 점수: {score} 점
+    ■ 오답 문항: {wrong_str}
+
+    감사합니다.
+    """
+    msg.attach(MIMEText(body, "plain"))
+
+    if photo_path and os.path.exists(photo_path):
+      with open(photo_path, "rb") as f:
+        img = MIMEImage(f.read())
+        img.add_header(
+            "Content-Disposition",
+            "attachment",
+            filename=os.path.basename(photo_path),
+        )
+        msg.attach(img)
+
+    server = smtplib.SMTP("smtp.gmail.com", 587)
+    server.starttls()
+    server.login(SENDER_EMAIL, SENDER_PASSWORD)
+    server.send_message(msg)
+    server.quit()
+  except Exception as e:
+    st.error(f"이메일 알림 전송 중 오류 발생: {e}")
+
+
 st.set_page_config(
-    page_title="중2-2 쎈 수학 B단계 정답 제출 시스템",
+    page_title="중2-2 쎈 수학 B단계 과제 채점 시스템",
     page_icon="✏️",
     layout="wide",
 )
-st.title("✏️ 중2-2 쎈 수학 B단계 (0021~0076) 과제 채점 시스템")
+st.title("✏️ 중2-2 쎈 수학 B단계 과제 채점 시스템")
 
 df = load_data()
 tab1, tab2, tab3 = st.tabs(
-    ["✍️ 답안 제출", "📊 전체 성적 대시보드", "👤 학생별 오답 분석"]
+    ["✍️ 답안 제출", "📊 전체 성적 대시보드 (선생님)", "👤 학생별 오답 분석 (선생님)"]
 )
 
-# 1. 답안 제출 탭
+# -------------------------------------------------------------------
+# 1. 답안 제출 탭 (학생용) - 데이터 삭제 UI 절대 없음
+# -------------------------------------------------------------------
 with tab1:
   st.subheader("학생 답안 입력")
-  col_user, col_date = st.columns(2)
+  col_user, col_range, col_date = st.columns([1, 1.5, 1])
+
   with col_user:
     student_name = st.selectbox("학생 이름을 선택하세요", STUDENTS)
+  with col_range:
+    selected_range_label = st.radio(
+        "과제 범위를 선택하세요",
+        ["0021번 ~ 0050번 (Part 1)", "0051번 ~ 0076번 (Part 2)"],
+        horizontal=True,
+    )
   with col_date:
     submit_date = st.date_input("제출일", datetime.date.today())
 
-  st.info("💡 각 문항의 정답을 선택한 후 최하단의 [과제 제출하기] 버튼을 눌러주세요.")
+  if "0021" in selected_range_label:
+    target_keys = RANGE_PART1
+    range_title = "쎈 중2-2 B단계 (0021~0050)"
+  else:
+    target_keys = RANGE_PART2
+    range_title = "쎈 중2-2 B단계 (0051~0076)"
+
+  st.info(
+      f"💡 **[{range_title}]** 총 {len(target_keys)}문항입니다. 정답을 선택한 후 최하단의 [과제 제출하기] 버튼을 눌러주세요."
+  )
 
   user_answers = {}
-  q_keys = list(QUESTIONS.keys())
-
-  # 10개 문항씩 보기 쉽게 구분
-  for i in range(0, len(q_keys), 10):
-    chunk = q_keys[i : i + 10]
+  for i in range(0, len(target_keys), 10):
+    chunk = target_keys[i : i + 10]
     with st.expander(
         f"📌 문항 {chunk[0]}번 ~ {chunk[-1]}번 답안 선택", expanded=(i == 0)
     ):
@@ -308,9 +398,25 @@ with tab1:
               f"**{q_num}번**",
               options=range(len(q_info["options"])),
               format_func=lambda x, opts=q_info["options"]: opts[x],
-              key=f"q_{q_num}",
+              key=f"q_{q_num}_{selected_range_label}",
               horizontal=True,
           )
+
+  st.write("---")
+  st.subheader("📸 풀이 과정 사진 첨부 (선택)")
+  photo_method = st.radio(
+      "사진 제출 방식을 선택하세요",
+      ["제출 안 함", "파일 업로드 (갤러리)", "카메라로 직접 촬영"],
+      horizontal=True,
+  )
+
+  uploaded_photo = None
+  if photo_method == "파일 업로드 (갤러리)":
+    uploaded_photo = st.file_uploader(
+        "풀이 사진을 선택하세요", type=["png", "jpg", "jpeg"]
+    )
+  elif photo_method == "카메라로 직접 촬영":
+    uploaded_photo = st.camera_input("풀이 과정 촬영")
 
   if st.button("🚀 과제 제출 및 채점하기", type="primary", use_container_width=True):
     correct_count = 0
@@ -322,30 +428,55 @@ with tab1:
       else:
         wrong_list.append(q_num)
 
-    total_q = len(QUESTIONS)
+    total_q = len(target_keys)
     score = round((correct_count / total_q) * 100, 1)
     wrong_str = ", ".join(wrong_list) if wrong_list else "없음"
 
-    # 데이터 저장
+    saved_photo_path = ""
+    if uploaded_photo is not None:
+      file_ext = uploaded_photo.name.split(".")[-1] if hasattr(
+          uploaded_photo, "name"
+      ) else "png"
+      filename = f"{submit_date}_{student_name}_{range_title.replace(' ', '_')}.{file_ext}"
+      saved_photo_path = os.path.join(UPLOAD_DIR, filename)
+      with open(saved_photo_path, "wb") as f:
+        f.write(uploaded_photo.getbuffer())
+
     new_data = pd.DataFrame([{
         "제출일시": str(submit_date),
         "학생명": student_name,
-        "교재명": "쎈 중2-2 B단계 (0021~0076)",
+        "과제범위": range_title,
         "맞은개수": correct_count,
         "전체문항": total_q,
         "환산점수": score,
         "오답문항": wrong_str,
+        "사진경로": saved_photo_path,
     }])
 
-    # 기존 동일 학생 제출 기록이 있으면 갱신, 없으면 추가
     df = df[
-        ~((df["학생명"] == student_name) & (df["제출일시"] == str(submit_date)))
+        ~(
+            (df["학생명"] == student_name)
+            & (df["과제범위"] == range_title)
+            & (df["제출일시"] == str(submit_date))
+        )
     ]
     df = pd.concat([df, new_data], ignore_index=True)
     save_data(df)
 
+    send_email_notification(
+        student_name,
+        range_title,
+        score,
+        correct_count,
+        total_q,
+        wrong_str,
+        saved_photo_path,
+    )
+
     st.balloons()
-    st.success(f"🎉 {student_name} 학생의 과제가 성공적으로 제출되었습니다!")
+    st.success(
+        f"🎉 {student_name} 학생의 **[{range_title}]** 과제가 성공적으로 제출되었습니다!"
+    )
 
     res_col1, res_col2, res_col3 = st.columns(3)
     res_col1.metric("맞은 개수", f"{correct_count} / {total_q}개")
@@ -357,51 +488,168 @@ with tab1:
     else:
       st.success("💯 만점입니다! 축하합니다!")
 
-# 2. 반 전체 대시보드 탭
+# -------------------------------------------------------------------
+# 2. 반 전체 대시보드 탭 (선생님 전용) - 비밀번호 통과 시에만 삭제기능 노출
+# -------------------------------------------------------------------
 with tab2:
-  st.subheader("📊 반 전체 과제 제출 현황")
-  if not df.empty:
-    avg_score = round(df["환산점수"].mean(), 1)
-    m1, m2, m3 = st.columns(3)
-    m1.metric("반 평균 점수", f"{avg_score}점")
-    m2.metric("과제 제출 인원", f"{len(df['학생명'].unique())} / {len(STUDENTS)}명")
-    m3.metric("최고 점수", f"{df['환산점수'].max()}점")
+  st.subheader("📊 반 전체 과제 제출 현황 (선생님 전용)")
+  teacher_pw2 = st.text_input(
+      "🔒 선생님 비밀번호를 입력하세요", type="password", key="pw_tab2"
+  )
 
-    fig = px.bar(
-        df,
-        x="학생명",
-        y="환산점수",
-        text="환산점수",
-        color="환산점수",
-        title="학생별 쎈 중2-2 B단계 성적",
-    )
-    fig.update_traces(textposition="outside")
-    fig.update_yaxes(range=[0, 110])
-    st.plotly_chart(fig, use_container_width=True)
-
-    st.write("**📝 최근 제출 누적 데이터**")
-    st.dataframe(
-        df.sort_values(by="제출일시", ascending=False), use_container_width=True
-    )
-  else:
-    st.info("아직 제출된 과제 데이터가 없습니다.")
-
-# 3. 학생별 오답 분석 탭
-with tab3:
-  st.subheader("👤 개별 학생 오답 리포트")
-  if not df.empty:
-    selected_stu = st.selectbox("학생 선택", STUDENTS, key="analyze_stu")
-    stu_df = df[df["학생명"] == selected_stu]
-
-    if not stu_df.empty:
-      latest_rec = stu_df.iloc[-1]
-      st.write(f"### 📌 {selected_stu} 학생 리포트")
-      st.write(
-          f"- **맞은 개수**: {latest_rec['맞은개수']}개 / {latest_rec['전체문항']}개"
+  if teacher_pw2 == TEACHER_PASSWORD:
+    if not df.empty:
+      selected_view_range = st.selectbox(
+          "조회할 과제 범위 선택",
+          ["전체 보기", "0021~0050 (Part 1)", "0051~0076 (Part 2)"],
       )
-      st.write(f"- **환산 점수**: {latest_rec['환산점수']}점")
-      st.write(f"- **오답 문항**: {latest_rec['오답문항']}")
+
+      filtered_df = df.copy()
+      if "0021" in selected_view_range:
+        filtered_df = filtered_df[
+            filtered_df["과제범위"].str.contains("0021~0050")
+        ]
+      elif "0051" in selected_view_range:
+        filtered_df = filtered_df[
+            filtered_df["과제범위"].str.contains("0051~0076")
+        ]
+
+      if not filtered_df.empty:
+        avg_score = round(filtered_df["환산점수"].mean(), 1)
+        m1, m2, m3 = st.columns(3)
+        m1.metric("평균 점수", f"{avg_score}점")
+        m2.metric(
+            "제출 건수",
+            f"{len(filtered_df['학생명'].unique())} / {len(STUDENTS)}명",
+        )
+        m3.metric("최고 점수", f"{filtered_df['환산점수'].max()}점")
+
+        fig = px.bar(
+            filtered_df,
+            x="학생명",
+            y="환산점수",
+            color="과제범위",
+            barmode="group",
+            text="환산점수",
+            title="학생별 과제 성적 비교",
+        )
+        fig.update_traces(textposition="outside")
+        fig.update_yaxes(range=[0, 110])
+        st.plotly_chart(fig, use_container_width=True)
+
+        st.write("**📝 최근 제출 누적 데이터**")
+        st.dataframe(
+            filtered_df.sort_values(by="제출일시", ascending=False),
+            use_container_width=True,
+        )
+
+        # 🗑️ [선생님 전용] 데이터 삭제 기능 (비밀번호 인증 내부)
+        st.write("---")
+        st.write("🗑️ **[선생님 전용] 제출 데이터 삭제**")
+
+        df_del = df.copy()
+        df_del["select_label"] = df_del.apply(
+            lambda r: (
+                f"{r['학생명']} | {r['제출일시']} | {r['과제범위']} ({r['환산점수']}점)"
+            ),
+            axis=1,
+        )
+
+        del_col1, del_col2 = st.columns([3, 1])
+        with del_col1:
+          selected_del_label = st.selectbox(
+              "삭제할 제출 기록을 선택하세요",
+              df_del["select_label"].unique(),
+              key="del_select",
+          )
+
+        with del_col2:
+          st.write(" ")
+          st.write(" ")
+          if st.button(
+              "❌ 선택 기록 삭제", type="primary", key="del_btn_action"
+          ):
+            target_row = df_del[
+                df_del["select_label"] == selected_del_label
+            ].iloc[0]
+
+            # 사진 파일도 존재하는 경우 함께 삭제
+            photo_p = target_row.get("사진경로", "")
+            if pd.notna(photo_p) and photo_p and os.path.exists(photo_p):
+              try:
+                os.remove(photo_p)
+              except Exception:
+                pass
+
+            df = df[
+                ~(
+                    (df["학생명"] == target_row["학생명"])
+                    & (df["제출일시"] == str(target_row["제출일시"]))
+                    & (df["과제범위"] == target_row["과제범위"])
+                )
+            ]
+            save_data(df)
+            st.success("해당 과제 제출 기록이 완전히 삭제되었습니다.")
+            st.rerun()
+
+      else:
+        st.info("선택한 범위의 제출 데이터가 없습니다.")
     else:
-      st.warning(f"{selected_stu} 학생의 제출 기록이 없습니다.")
+      st.info("아직 제출된 과제 데이터가 없습니다.")
+  elif teacher_pw2 != "":
+    st.error("비밀번호가 올바르지 않습니다.")
   else:
-    st.info("데이터가 없습니다.")
+    st.warning("선생님 전용 공간입니다. 비밀번호를 입력해주세요.")
+
+# -------------------------------------------------------------------
+# 3. 학생별 오답 분석 탭 (선생님 전용)
+# -------------------------------------------------------------------
+with tab3:
+  st.subheader("👤 개별 학생 오답 리포트 및 풀이 사진 (선생님 전용)")
+  teacher_pw3 = st.text_input(
+      "🔒 선생님 비밀번호를 입력하세요", type="password", key="pw_tab3"
+  )
+
+  if teacher_pw3 == TEACHER_PASSWORD:
+    if not df.empty:
+      selected_stu = st.selectbox("학생 선택", STUDENTS, key="analyze_stu")
+      stu_df = df[df["학생명"] == selected_stu]
+
+      if not stu_df.empty:
+        st.write(f"### 📌 {selected_stu} 학생 누적 제출 기록")
+        st.dataframe(
+            stu_df[
+                [
+                    "제출일시",
+                    "과제범위",
+                    "맞은개수",
+                    "환산점수",
+                    "오답문항",
+                    "사진경로",
+                ]
+            ],
+            use_container_width=True,
+        )
+
+        st.write("---")
+        st.write("🖼️ **제출된 풀이과정 사진 확인**")
+        for _, row in stu_df.iterrows():
+          photo_p = row.get("사진경로", "")
+          if pd.notna(photo_p) and photo_p and os.path.exists(photo_p):
+            st.image(
+                photo_p,
+                caption=f"[{row['제출일시']}] {row['과제범위']} - {selected_stu} 학생 풀이",
+                width=500,
+            )
+          else:
+            st.caption(
+                f"[{row['제출일시']}] {row['과제범위']} - 제출된 사진 없음"
+            )
+      else:
+        st.warning(f"{selected_stu} 학생의 제출 기록이 없습니다.")
+    else:
+      st.info("데이터가 없습니다.")
+  elif teacher_pw3 != "":
+    st.error("비밀번호가 올바르지 않습니다.")
+  else:
+    st.warning("선생님 전용 공간입니다. 비밀번호를 입력해주세요.")
