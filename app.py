@@ -16,9 +16,9 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 TEACHER_PASSWORD = "8024"
 
 # ✉️ 이메일 알림 설정 (Gmail)
-SENDER_EMAIL = "pend9494@gmail.com"  # 발송용 Gmail 주소
-SENDER_PASSWORD = "gson fpcr mlcz kzfy"  # Gmail 앱 비밀번호 (16자리)
-RECEIVER_EMAIL = "pend9494@gmail.com"  # 선생님 이메일 주소
+SENDER_EMAIL = "pend9494@gmail.com"
+SENDER_PASSWORD = "gson fpcr mlcz kzfy"
+RECEIVER_EMAIL = "pend9494@gmail.com"
 
 # 👤 중2반 학생 명단
 STUDENTS = ["김수연", "최윤우", "주지원", "백서윤"]
@@ -1808,9 +1808,9 @@ ALL_QUESTIONS = {
 
 
 # ------------------------------------------------------------------------------
-# 30문제씩 프로그램이 자동으로 분할하는 로직
+# 25문제씩 프로그램이 자동으로 분할하는 로직
 # ------------------------------------------------------------------------------
-def create_30_item_chunks(data_dict, chunk_size=30):
+def create_25_item_chunks(data_dict, chunk_size=25):
   keys = list(data_dict.keys())
   chunks = {}
   for i in range(0, len(keys), chunk_size):
@@ -1822,7 +1822,7 @@ def create_30_item_chunks(data_dict, chunk_size=30):
   return chunks
 
 
-QUESTION_CHUNKS = create_30_item_chunks(ALL_QUESTIONS, chunk_size=30)
+QUESTION_CHUNKS = create_25_item_chunks(ALL_QUESTIONS, chunk_size=25)
 
 
 # ==============================================================================
@@ -1911,9 +1911,11 @@ def send_email_notification(
 # UI Structure
 # ==============================================================================
 st.set_page_config(
-    page_title="중2-2 쎈 수학 과제 채점 시스템", page_icon="✏️", layout="wide"
+    page_title="[다원수학] 중2-2 쎈 수학 과제 채점 시스템",
+    page_icon="✏️",
+    layout="wide",
 )
-st.title("✏️ 중2-2 쎈 수학 과제 채점 시스템")
+st.title("✏️ [다원수학] 중2-2 쎈 수학 과제 채점 시스템")
 
 df = load_data()
 tab1, tab2, tab3 = st.tabs(
@@ -1932,7 +1934,7 @@ with tab1:
 
   with col_range:
     selected_chunk_label = st.selectbox(
-        "제출할 과제 구역(30문항 단위)을 선택하세요",
+        "제출할 과제 구역(25문항 단위)을 선택하세요",
         list(QUESTION_CHUNKS.keys()),
     )
 
@@ -1947,23 +1949,40 @@ with tab1:
   )
 
   user_answers = {}
-  # 10개 문항씩 접이식 세션으로 편하게 답안 제출하도록 구성
+  # 10개 문항 단위 접이식 세션
   for i in range(0, len(target_keys), 10):
     chunk_10 = target_keys[i : i + 10]
     with st.expander(
         f"📝 문항 {chunk_10[0]}번 ~ {chunk_10[-1]}번 정답 입력", expanded=(i == 0)
     ):
-      cols = st.columns(2)
-      for idx, q_num in enumerate(chunk_10):
-        q_info = target_questions[q_num]
-        with cols[idx % 2]:
-          user_answers[q_num] = st.radio(
-              f"**{q_num}번**",
-              options=range(len(q_info["options"])),
-              format_func=lambda x, opts=q_info["options"]: opts[x],
-              key=f"q_{q_num}_{selected_chunk_label}",
+      # 📱 모바일/PC 순서 고정을 위해 행(row) 단위로 2개씩 컬럼을 생성합니다.
+      for j in range(0, len(chunk_10), 2):
+        row_cols = st.columns(2)
+
+        # 첫 번째 문항
+        q_num1 = chunk_10[j]
+        q_info1 = target_questions[q_num1]
+        with row_cols[0]:
+          user_answers[q_num1] = st.radio(
+              f"**{q_num1}번**",
+              options=range(len(q_info1["options"])),
+              format_func=lambda x, opts=q_info1["options"]: opts[x],
+              key=f"q_{q_num1}_{selected_chunk_label}",
               horizontal=True,
           )
+
+        # 두 번째 문항 (존재하는 경우만 배치)
+        if j + 1 < len(chunk_10):
+          q_num2 = chunk_10[j + 1]
+          q_info2 = target_questions[q_num2]
+          with row_cols[1]:
+            user_answers[q_num2] = st.radio(
+                f"**{q_num2}번**",
+                options=range(len(q_info2["options"])),
+                format_func=lambda x, opts=q_info2["options"]: opts[x],
+                key=f"q_{q_num2}_{selected_chunk_label}",
+                horizontal=True,
+            )
 
   st.write("---")
   st.subheader("📸 풀이 과정 사진 첨부 (선택)")
@@ -2016,7 +2035,6 @@ with tab1:
         "사진경로": saved_photo_path,
     }])
 
-    # 동일한 날짜 + 학생 + 구역의 기존 데이터가 있으면 최신으로 업데이트
     df = df[
         ~(
             (df["학생명"] == student_name)
@@ -2056,7 +2074,7 @@ with tab1:
 # 2. 반 전체 대시보드 탭 (선생님 전용)
 # ------------------------------------------------------------------------------
 with tab2:
-  st.subheader("📊 반 전체 과제 제출 현황 (선생님 전용)")
+  st.subheader("📊 중2-2반 과제 제출 현황 (선생님 전용)")
   teacher_pw2 = st.text_input(
       "🔒 선생님 비밀번호를 입력하세요", type="password", key="pw_tab2"
   )
@@ -2102,7 +2120,6 @@ with tab2:
             use_container_width=True,
         )
 
-        # 🗑️ [선생님 전용] 삭제 기능
         st.write("---")
         st.write("🗑️ **[선생님 전용] 데이터 삭제**")
 
