@@ -1,9 +1,9 @@
 import datetime
-import os
-import smtplib
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import os
+import smtplib
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -14,7 +14,13 @@ from streamlit_gsheets import GSheetsConnection
 # ==============================================================================
 SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1c3bRcHpxWkSPbUO5kFCp2bSobwBbWiA33yegSoiQapg/edit?usp=sharing"
 
-# 기존
+# 🔑 Secrets에 등록된 private_key의 \\n 문자열 자동 보정 (RSA PEM 인코딩 에러 방지)
+if "connections" in st.secrets and "gsheets" in st.secrets["connections"]:
+  if "private_key" in st.secrets["connections"]["gsheets"]:
+    st.secrets["connections"]["gsheets"]["private_key"] = st.secrets[
+        "connections"
+    ]["gsheets"]["private_key"].replace("\\n", "\n")
+
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 
@@ -51,7 +57,7 @@ def load_data():
 
 
 def save_data(df):
-  conn.update(data=df)  # 서비스 계정 인증 정보를 바탕으로 정상 작동함
+  conn.update(data=df)  # 서비스 계정 인증 정보를 바탕으로 구글 시트 업데이트
 
 
 UPLOAD_DIR = "uploaded_photos"
@@ -69,11 +75,10 @@ RECEIVER_EMAIL = "pend9494@gmail.com"
 STUDENTS = ["김수연", "최윤우", "주지원", "백서윤"]
 
 # ==============================================================================
-# 📚 구글 드라이브 해설 링크 설정 (선생님께서 드라이브 링크를 여기에 넣어주세요)
+# 📚 구글 드라이브 해설 링크 설정
 # ==============================================================================
 EXPLANATION_LINKS = {
-    # 예시 형식: "📌 0021번 ~ 0050번 (30문항)": "https://drive.google.com/file/d/1fzUA0SbqMgfxa2Ua23uZENzA79g1xb_p/view?usp=drive_link",
-    # 아래에 필요한 범위별 구글 드라이브 링크를 입력해두시면 됩니다.
+    # 예시 형식: "📌 0021번 ~ 0050번 (30문항)": "https://drive.google.com/file/d/...",
 }
 
 # ==============================================================================
@@ -709,7 +714,13 @@ ALL_QUESTIONS = {
         "ans": 2,
     },
     "0207": {
-        "options": ["① 해설 1", "② 해설 2", "③ 풀이참조", "④ 해설 4", "⑤ 해설 5"],
+        "options": [
+            "① 해설 1",
+            "② 해설 2",
+            "③ 풀이참조",
+            "④ 해설 4",
+            "⑤ 해설 5",
+        ],
         "ans": 2,
     },
     "0208": {
@@ -925,7 +936,13 @@ ALL_QUESTIONS = {
     },
     "0277": {"options": ["①", "②", "③", "④", "⑤"], "ans": 0},
     "0278": {
-        "options": ["① 풀이 30쪽", "② 해설참조", "③ 답안없음", "④ 풀이 31쪽", "⑤ 오답"],
+        "options": [
+            "① 풀이 30쪽",
+            "② 해설참조",
+            "③ 답안없음",
+            "④ 풀이 31쪽",
+            "⑤ 오답",
+        ],
         "ans": 0,
     },
     "0279": {"options": ["①", "②", "③", "④", "⑤"], "ans": 1},
@@ -1077,7 +1094,13 @@ ALL_QUESTIONS = {
         "ans": 2,
     },
     "0310": {
-        "options": ["① 풀이 35쪽", "② 해설참조", "③ 답안없음", "④ 풀이 36쪽", "⑤ 오답"],
+        "options": [
+            "① 풀이 35쪽",
+            "② 해설참조",
+            "③ 답안없음",
+            "④ 풀이 36쪽",
+            "⑤ 오답",
+        ],
         "ans": 0,
     },
     "0311": {
@@ -1121,7 +1144,13 @@ ALL_QUESTIONS = {
     "0354": {"options": ["①", "②", "③", "④", "⑤"], "ans": 4},
     "0355": {"options": ["①", "②", "③", "④", "⑤"], "ans": 4},
     "0356": {
-        "options": ["① 풀이 37쪽", "② 해설참조", "③ 답안없음", "④ 풀이 38쪽", "⑤ 오답"],
+        "options": [
+            "① 풀이 37쪽",
+            "② 해설참조",
+            "③ 답안없음",
+            "④ 풀이 38쪽",
+            "⑤ 오답",
+        ],
         "ans": 0,
     },
     "0357": {
@@ -1136,7 +1165,13 @@ ALL_QUESTIONS = {
     },
     "0358": {"options": ["①", "②", "③", "④", "⑤"], "ans": 2},
     "0359": {
-        "options": ["① 풀이 37쪽", "② 해설참조", "③ 답안없음", "④ 풀이 38쪽", "⑤ 오답"],
+        "options": [
+            "① 풀이 37쪽",
+            "② 해설참조",
+            "③ 답안없음",
+            "④ 풀이 38쪽",
+            "⑤ 오답",
+        ],
         "ans": 0,
     },
     "0360": {
@@ -1186,7 +1221,13 @@ ALL_QUESTIONS = {
         "ans": 2,
     },
     "0370": {
-        "options": ["① 풀이 38쪽", "② 해설참조", "③ 답안없음", "④ 풀이 39쪽", "⑤ 오답"],
+        "options": [
+            "① 풀이 38쪽",
+            "② 해설참조",
+            "③ 답안없음",
+            "④ 풀이 39쪽",
+            "⑤ 오답",
+        ],
         "ans": 0,
     },
     "0371": {
@@ -1253,13 +1294,25 @@ ALL_QUESTIONS = {
     },
     "0388": {"options": ["①", "②", "③", "④", "⑤"], "ans": 3},
     "0389": {
-        "options": ["① 6 cm", "② 7.5 cm", "③ 9 cm", "④ 10.5 cm", "⑤ 12 cm"],
+        "options": [
+            "① 6 cm",
+            "② 7.5 cm",
+            "③ 9 cm",
+            "④ 10.5 cm",
+            "⑤ 12 cm",
+        ],
         "ans": 2,
     },
     "0390": {"options": ["①", "②", "③", "④", "⑤"], "ans": 2},
     "0391": {"options": ["①", "②", "③", "④", "⑤"], "ans": 3},
     "0392": {
-        "options": ["① 정사각형", "② 직사각형", "③ 마름모", "④ 평행사변형", "⑤ 사다리꼴"],
+        "options": [
+            "① 정사각형",
+            "② 직사각형",
+            "③ 마름모",
+            "④ 평행사변형",
+            "⑤ 사다리꼴",
+        ],
         "ans": 0,
     },
     "0393": {
@@ -1273,11 +1326,23 @@ ALL_QUESTIONS = {
         "ans": 0,
     },
     "0394": {
-        "options": ["① 마름모", "② 직사각형", "③ 정사각형", "④ 평행사변형", "⑤ 등변사다리꼴"],
+        "options": [
+            "① 마름모",
+            "② 직사각형",
+            "③ 정사각형",
+            "④ 평행사변형",
+            "⑤ 등변사다리꼴",
+        ],
         "ans": 0,
     },
     "0395": {
-        "options": ["① 마름모", "② 직사각형", "③ 정사각형", "④ 평행사변형", "⑤ 등변사다리꼴"],
+        "options": [
+            "① 마름모",
+            "② 직사각형",
+            "③ 정사각형",
+            "④ 평행사변형",
+            "⑤ 등변사다리꼴",
+        ],
         "ans": 0,
     },
     "0396": {
@@ -1318,7 +1383,13 @@ ALL_QUESTIONS = {
         "ans": 0,
     },
     "0406": {
-        "options": ["① 마름모", "② 직사각형", "③ 정사각형", "④ 평행사변형", "⑤ 등변사다리꼴"],
+        "options": [
+            "① 마름모",
+            "② 직사각형",
+            "③ 정사각형",
+            "④ 평행사변형",
+            "⑤ 등변사다리꼴",
+        ],
         "ans": 0,
     },
     "0407": {"options": ["①", "②", "③", "④", "⑤"], "ans": 3},
@@ -1418,7 +1489,13 @@ ALL_QUESTIONS = {
     },
     "0427": {"options": ["①", "②", "③", "④", "⑤"], "ans": 1},
     "0428": {
-        "options": ["① 180/13", "② 210/13", "③ 240/13", "④ 270/13", "⑤ 300/13"],
+        "options": [
+            "① 180/13",
+            "② 210/13",
+            "③ 240/13",
+            "④ 270/13",
+            "⑤ 300/13",
+        ],
         "ans": 2,
     },
     "0429": {
@@ -1497,7 +1574,13 @@ ALL_QUESTIONS = {
         "ans": 2,
     },
     "0447": {
-        "options": ["① 풀이 48쪽", "② 해설참조", "③ 답안없음", "④ 풀이 49쪽", "⑤ 오답"],
+        "options": [
+            "① 풀이 48쪽",
+            "② 해설참조",
+            "③ 답안없음",
+            "④ 풀이 49쪽",
+            "⑤ 오답",
+        ],
         "ans": 0,
     },
     "0448": {
@@ -1596,7 +1679,13 @@ ALL_QUESTIONS = {
         "ans": 2,
     },
     "0489": {
-        "options": ["① 6 cm", "② 7.5 cm", "③ 9 cm", "④ 10.5 cm", "⑤ 12 cm"],
+        "options": [
+            "① 6 cm",
+            "② 7.5 cm",
+            "③ 9 cm",
+            "④ 10.5 cm",
+            "⑤ 12 cm",
+        ],
         "ans": 2,
     },
     "0490": {"options": ["①", "②", "③", "④", "⑤"], "ans": 2},
@@ -1636,7 +1725,13 @@ ALL_QUESTIONS = {
         "ans": 2,
     },
     "0499": {
-        "options": ["① 풀이 52쪽", "② 해설참조", "③ 답안없음", "④ 풀이 53쪽", "⑤ 오답"],
+        "options": [
+            "① 풀이 52쪽",
+            "② 해설참조",
+            "③ 답안없음",
+            "④ 풀이 53쪽",
+            "⑤ 오답",
+        ],
         "ans": 0,
     },
     "0500": {"options": ["①", "②", "③", "④", "⑤"], "ans": 3},
@@ -1646,7 +1741,13 @@ ALL_QUESTIONS = {
     },
     "0502": {"options": ["①", "②", "③", "④", "⑤"], "ans": 4},
     "0503": {
-        "options": ["① 풀이 53쪽", "② 해설참조", "③ 답안없음", "④ 풀이 54쪽", "⑤ 오답"],
+        "options": [
+            "① 풀이 53쪽",
+            "② 해설참조",
+            "③ 답안없음",
+            "④ 풀이 54쪽",
+            "⑤ 오답",
+        ],
         "ans": 0,
     },
     "0504": {"options": ["①", "②", "③", "④", "⑤"], "ans": 2},
@@ -1676,7 +1777,13 @@ ALL_QUESTIONS = {
     },
     "0511": {"options": ["①", "②", "③", "④", "⑤"], "ans": 2},
     "0512": {
-        "options": ["① 1 cm", "② 5/4 cm", "③ 3/2 cm", "④ 7/4 cm", "⑤ 2 cm"],
+        "options": [
+            "① 1 cm",
+            "② 5/4 cm",
+            "③ 3/2 cm",
+            "④ 7/4 cm",
+            "⑤ 2 cm",
+        ],
         "ans": 2,
     },
     "0513": {"options": ["①", "②", "③", "④", "⑤"], "ans": 4},
@@ -1717,7 +1824,13 @@ ALL_QUESTIONS = {
         "ans": 2,
     },
     "0520": {
-        "options": ["① 3 cm", "② 7/2 cm", "③ 4 cm", "④ 9/2 cm", "⑤ 5 cm"],
+        "options": [
+            "① 3 cm",
+            "② 7/2 cm",
+            "③ 4 cm",
+            "④ 9/2 cm",
+            "⑤ 5 cm",
+        ],
         "ans": 3,
     },
     "0521": {"options": ["①", "②", "③", "④", "⑤"], "ans": 2},
@@ -1744,7 +1857,13 @@ ALL_QUESTIONS = {
     },
     "0525": {"options": ["①", "②", "③", "④", "⑤"], "ans": 3},
     "0526": {
-        "options": ["① 6 cm", "② 13/2 cm", "③ 7 cm", "④ 15/2 cm", "⑤ 8 cm"],
+        "options": [
+            "① 6 cm",
+            "② 13/2 cm",
+            "③ 7 cm",
+            "④ 15/2 cm",
+            "⑤ 8 cm",
+        ],
         "ans": 3,
     },
     "0527": {
@@ -1902,18 +2021,18 @@ def send_email_notification(
     )
 
     body = f"""
-    안녕하세요 박지호 선생님,
+        안녕하세요 박지호 선생님,
 
-    {student_name} 학생이 과제 답안을 제출했습니다.
+        {student_name} 학생이 과제 답안을 제출했습니다.
 
-    ■ 학생명: {student_name}
-    ■ 과제 범위: {range_title}
-    ■ 맞은 개수: {correct_count} / {total_q} 개
-    ■ 환산 점수: {score} 점
-    ■ 오답 문항: {wrong_str}
+        ■ 학생명: {student_name}
+        ■ 과제 범위: {range_title}
+        ■ 맞은 개수: {correct_count} / {total_q} 개
+        ■ 환산 점수: {score} 점
+        ■ 오답 문항: {wrong_str}
 
-    감사합니다.
-    """
+        감사합니다.
+        """
     msg.attach(MIMEText(body, "plain"))
 
     if photo_path and os.path.exists(photo_path):
@@ -2013,7 +2132,7 @@ with tab1:
             )
 
   st.write("---")
-  st.subheader("📸 풀이 과정 사진 첨부 (선택)")
+  st.subheader("📸 풀이 과정 사진 첨부 (선생님 확인용)")
   photo_method = st.radio(
       "사진 제출 방식을 선택하세요",
       ["제출 안 함", "파일 업로드 (갤러리)", "카메라로 직접 촬영"],
@@ -2244,16 +2363,14 @@ with tab3:
       if not stu_df.empty:
         st.write(f"### 📌 {selected_stu} 학생 누적 제출 기록")
         st.dataframe(
-            stu_df[
-                [
-                    "제출일시",
-                    "과제범위",
-                    "맞은개수",
-                    "환산점수",
-                    "오답문항",
-                    "사진경로",
-                ]
-            ],
+            stu_df[[
+                "제출일시",
+                "과제범위",
+                "맞은개수",
+                "환산점수",
+                "오답문항",
+                "사진경로",
+            ]],
             use_container_width=True,
         )
 
