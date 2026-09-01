@@ -73,11 +73,24 @@ STUDENTS = ["김수연", "최윤우", "주지원", "백서윤"]
 # ==============================================================================
 # 📚 구글 드라이브 해설 링크 설정
 # ==============================================================================
+# ==============================================================================
+# 📚 구글 드라이브 해설 링크 설정
+# ==============================================================================
 EXPLANATION_LINKS = {
-    # ⚠️ 반드시 아래와 같이 라벨 이름(📌, 공백, (30문항) 포함)을 똑같이 써야 작동합니다.
-    "📌 0021번 ~ 0050번 (30문항)": "https://drive.google.com/file/d/1fzUA0SbqMgfxa2Ua23uZENzA79g1xb_p/view?usp=drive_link",
-    "📌 0051번 ~ 0080번 (30문항)": "https://drive.google.com/file/d/실제_링크_주소_2/view",
-    "📌 0081번 ~ 0134번 (30문항)": "https://drive.google.com/file/d/실제_링크_주소_3/view",
+    "📌 0021번 ~ 0050번 (30문항)": "https://drive.google.com/file/d/13eFNGplb1G7f8Be53D8gIVp1d0c4jzLt/view?usp=drive_link",
+    "📌 0051번 ~ 0080번 (30문항)": "https://drive.google.com/file/d/1Cs-WCcdN-b6tPO9A5Pz8vF120xJmm3IU/view?usp=drive_link",
+    "📌 0081번 ~ 0139번 (30문항)": "https://drive.google.com/file/d/1EbJUeArncDbcglSaOAoJNqAbqhDjEJyo/view?usp=drive_link",
+    "📌 0140번 ~ 0169번 (30문항)": "https://drive.google.com/file/d/1HIcwFi8GXyEW-WZiEHeonFhXmnfTnTjH/view?usp=drive_link",
+    "📌 0170번 ~ 0199번 (30문항)": "https://drive.google.com/file/d/1IQyqHd7_VY69S4CnaG0t3EyXEhJzViQZ/view?usp=drive_link",
+    "📌 0200번 ~ 0253번 (30문항)": "https://drive.google.com/file/d/1RcbardfYYQD1BcnuZncvkPbhrz730aIE/view?usp=drive_link",
+    "📌 0254번 ~ 0283번 (30문항)": "https://drive.google.com/file/d/1Sn1MCUobvJ-9PNzQg4g3eo2-8AD0Dbfz/view?usp=drive_link",
+    "📌 0284번 ~ 0349번 (30문항)": "https://drive.google.com/file/d/1fzUA0SbqMgfxa2Ua23uZENzA79g1xb_p/view?usp=drive_link",
+    "📌 0350번 ~ 0379번 (30문항)": "https://drive.google.com/file/d/1ivY5ZZDbEr1Od2EH8jWHLYEYeDlvAElz/view?usp=drive_link",
+    "📌 0380번 ~ 0409번 (30문항)": "https://drive.google.com/file/d/1l2ZRZSVH4LTYKQst0SuS1AVkzHLJGnhF/view?usp=drive_link",
+    "📌 0410번 ~ 0439번 (30문항)": "https://drive.google.com/file/d/1oyBmyunx4ZvIqUH8AW2EECMh9DD5108R/view?usp=drive_link",
+    "📌 0440번 ~ 0491번 (30문항)": "https://drive.google.com/file/d/1q0Aq5BPUJWFQptWd1J0YrhIQS8ar4aH2/view?usp=drive_link",
+    "📌 0492번 ~ 0521번 (30문항)": "https://drive.google.com/file/d/1qIcUdbSdUkQ7UV3rhappdlLWJdeZ2cSz/view?usp=drive_link",
+    "📌 0522번 ~ 0543번 (22문항)": "https://drive.google.com/file/d/1zQyKiTA2TEQW27i_heed3Qu-ArlTgGmp/view?usp=drive_link",
 }
 
 # ==============================================================================
