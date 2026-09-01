@@ -14,12 +14,13 @@ from streamlit_gsheets import GSheetsConnection
 # ==============================================================================
 SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1c3bRcHpxWkSPbUO5kFCp2bSobwBbWiA33yegSoiQapg/edit?usp=sharing"
 
+# 기존
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 
 def load_data():
   try:
-    df = conn.read(spreadsheet=SPREADSHEET_URL, ttl=0)  # ttl=0: 캐시 없이 항상 최신 데이터 조회
+    df = conn.read(ttl=0)  # secrets.toml에 지정된 spreadsheet 자동 참조
     if df is None or df.empty:
       return pd.DataFrame(
           columns=[
@@ -33,7 +34,7 @@ def load_data():
               "사진경로",
           ]
       )
-    return df.dropna(how="all")  # 완전히 빈 행 제거
+    return df.dropna(how="all")
   except Exception:
     return pd.DataFrame(
         columns=[
@@ -50,7 +51,7 @@ def load_data():
 
 
 def save_data(df):
-  conn.update(spreadsheet=SPREADSHEET_URL, data=df)
+  conn.update(data=df)  # 서비스 계정 인증 정보를 바탕으로 정상 작동함
 
 
 UPLOAD_DIR = "uploaded_photos"
