@@ -7,6 +7,38 @@ from email.mime.text import MIMEText
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+import streamlit as st
+from streamlit_gsheets import GSheetsConnection
+
+# 🔗 구글 시트 연결 (공유 링크 입력)
+SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1c3bRcHpxWkSPbUO5kFCp2bSobwBbWiA33yegSoiQapg/edit?usp=sharing"
+
+conn = st.connection("gsheets", type=GSheetsConnection)
+
+
+# 데이터 불러오기
+def load_data():
+  try:
+    df = conn.read(spreadsheet=SPREADSHEET_URL, ttl=0)  # ttl=0: 항상 최신 데이터 조회
+    return df
+  except Exception:
+    return pd.DataFrame(
+        columns=[
+            "제출일시",
+            "학생명",
+            "과제범위",
+            "맞은개수",
+            "전체문항",
+            "환산점수",
+            "오답문항",
+            "사진경로",
+        ]
+    )
+
+
+# 데이터 저장하기
+def save_data(df):
+  conn.update(spreadsheet=SPREADSHEET_URL, data=df)
 
 DATA_FILE = "sen_mid2_2_scores.csv"
 UPLOAD_DIR = "uploaded_photos"
