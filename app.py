@@ -7,20 +7,33 @@ from email.mime.text import MIMEText
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 
-# 🔗 구글 시트 연결 (공유 링크 입력)
+# ==============================================================================
+# 📊 구글 시트 데이터베이스 연동 설정
+# ==============================================================================
 SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1c3bRcHpxWkSPbUO5kFCp2bSobwBbWiA33yegSoiQapg/edit?usp=sharing"
 
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 
-# 데이터 불러오기
 def load_data():
   try:
-    df = conn.read(spreadsheet=SPREADSHEET_URL, ttl=0)  # ttl=0: 항상 최신 데이터 조회
-    return df
+    df = conn.read(spreadsheet=SPREADSHEET_URL, ttl=0)  # ttl=0: 캐시 없이 항상 최신 데이터 조회
+    if df is None or df.empty:
+      return pd.DataFrame(
+          columns=[
+              "제출일시",
+              "학생명",
+              "과제범위",
+              "맞은개수",
+              "전체문항",
+              "환산점수",
+              "오답문항",
+              "사진경로",
+          ]
+      )
+    return df.dropna(how="all")  # 완전히 빈 행 제거
   except Exception:
     return pd.DataFrame(
         columns=[
@@ -36,11 +49,10 @@ def load_data():
     )
 
 
-# 데이터 저장하기
 def save_data(df):
   conn.update(spreadsheet=SPREADSHEET_URL, data=df)
 
-DATA_FILE = "sen_mid2_2_scores.csv"
+
 UPLOAD_DIR = "uploaded_photos"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -54,6 +66,14 @@ RECEIVER_EMAIL = "pend9494@gmail.com"
 
 # 👤 중2반 학생 명단
 STUDENTS = ["김수연", "최윤우", "주지원", "백서윤"]
+
+# ==============================================================================
+# 📚 구글 드라이브 해설 링크 설정 (선생님께서 드라이브 링크를 여기에 넣어주세요)
+# ==============================================================================
+EXPLANATION_LINKS = {
+    # 예시 형식: "📌 0021번 ~ 0050번 (30문항)": "https://drive.google.com/file/d/해설파일ID/view?usp=sharing",
+    # 아래에 필요한 범위별 구글 드라이브 링크를 입력해두시면 됩니다.
+}
 
 # ==============================================================================
 # 전체 문항 데이터베이스 (0021 ~ 0543)
@@ -1840,9 +1860,9 @@ ALL_QUESTIONS = {
 
 
 # ------------------------------------------------------------------------------
-# 25문제씩 프로그램이 자동으로 분할하는 로직
+# 30문제씩 프로그램이 자동으로 분할하는 로직
 # ------------------------------------------------------------------------------
-def create_25_item_chunks(data_dict, chunk_size=25):
+def create_question_chunks(data_dict, chunk_size=30):
   keys = list(data_dict.keys())
   chunks = {}
   for i in range(0, len(keys), chunk_size):
@@ -1854,32 +1874,7 @@ def create_25_item_chunks(data_dict, chunk_size=25):
   return chunks
 
 
-QUESTION_CHUNKS = create_25_item_chunks(ALL_QUESTIONS, chunk_size=25)
-
-
-# ==============================================================================
-# Helper Functions
-# ==============================================================================
-def load_data():
-  if os.path.exists(DATA_FILE):
-    return pd.read_csv(DATA_FILE)
-  else:
-    return pd.DataFrame(
-        columns=[
-            "제출일시",
-            "학생명",
-            "과제범위",
-            "맞은개수",
-            "전체문항",
-            "환산점수",
-            "오답문항",
-            "사진경로",
-        ]
-    )
-
-
-def save_data(df):
-  df.to_csv(DATA_FILE, index=False)
+QUESTION_CHUNKS = create_question_chunks(ALL_QUESTIONS, chunk_size=30)
 
 
 def send_email_notification(
@@ -1966,7 +1961,7 @@ with tab1:
 
   with col_range:
     selected_chunk_label = st.selectbox(
-        "제출할 과제 구역(25문항 단위)을 선택하세요",
+        "제출할 과제 구역(30문항 단위)을 선택하세요",
         list(QUESTION_CHUNKS.keys()),
     )
 
@@ -1977,7 +1972,8 @@ with tab1:
   target_keys = list(target_questions.keys())
 
   st.info(
-      f"💡 **[{selected_chunk_label}]** 총 {len(target_keys)}문항입니다. 정답 선택 후 [과제 제출하기] 버튼을 누르세요."
+      f"💡 **[{selected_chunk_label}]** 총 {len(target_keys)}문항입니다. 정답"
+      " 선택 후 [과제 제출하기] 버튼을 누르세요."
   )
 
   user_answers = {}
@@ -1987,7 +1983,6 @@ with tab1:
     with st.expander(
         f"📝 문항 {chunk_10[0]}번 ~ {chunk_10[-1]}번 정답 입력", expanded=(i == 0)
     ):
-      # 📱 모바일/PC 순서 고정을 위해 행(row) 단위로 2개씩 컬럼을 생성합니다.
       for j in range(0, len(chunk_10), 2):
         row_cols = st.columns(2)
 
@@ -2048,9 +2043,11 @@ with tab1:
 
     saved_photo_path = ""
     if uploaded_photo is not None:
-      file_ext = uploaded_photo.name.split(".")[-1] if hasattr(
-          uploaded_photo, "name"
-      ) else "png"
+      file_ext = (
+          uploaded_photo.name.split(".")[-1]
+          if hasattr(uploaded_photo, "name")
+          else "png"
+      )
       filename = f"{submit_date}_{student_name}_{selected_chunk_label.replace(' ', '_').replace('📌_', '')}.{file_ext}"
       saved_photo_path = os.path.join(UPLOAD_DIR, filename)
       with open(saved_photo_path, "wb") as f:
@@ -2067,13 +2064,17 @@ with tab1:
         "사진경로": saved_photo_path,
     }])
 
-    df = df[
-        ~(
-            (df["학생명"] == student_name)
-            & (df["과제범위"] == selected_chunk_label)
-            & (df["제출일시"] == str(submit_date))
-        )
-    ]
+    # 기존 최신 데이터 다시 조회 후 업데이트
+    df = load_data()
+
+    if not df.empty and "학생명" in df.columns:
+      df = df[
+          ~(
+              (df["학생명"] == student_name)
+              & (df["과제범위"] == selected_chunk_label)
+              & (df["제출일시"] == str(submit_date))
+          )
+      ]
     df = pd.concat([df, new_data], ignore_index=True)
     save_data(df)
 
@@ -2102,6 +2103,24 @@ with tab1:
     else:
       st.success("💯 만점입니다! 축하합니다!")
 
+    # ==========================================================
+    # 📚 구글 드라이브 해설 링크 출력 부분
+    # ==========================================================
+    st.write("---")
+    st.subheader("📚 이번 과제 해설 파일 / 링크 확인")
+    drive_link = EXPLANATION_LINKS.get(selected_chunk_label, "")
+    if drive_link:
+      st.markdown(
+          f"👉 **[클릭하여 구글 드라이브 해설 보기]({drive_link})**",
+          unsafe_allow_html=True,
+      )
+    else:
+      st.info(
+          "현재 선택하신 범위의 해설 링크가 등록되지 않았습니다. (선생님께"
+          " 문의하세요)"
+      )
+
+
 # ------------------------------------------------------------------------------
 # 2. 반 전체 대시보드 탭 (선생님 전용)
 # ------------------------------------------------------------------------------
@@ -2112,6 +2131,7 @@ with tab2:
   )
 
   if teacher_pw2 == TEACHER_PASSWORD:
+    df = load_data()
     if not df.empty:
       selected_view_range = st.selectbox(
           "조회할 과제 범위 선택", ["전체 보기"] + list(QUESTION_CHUNKS.keys())
@@ -2215,6 +2235,7 @@ with tab3:
   )
 
   if teacher_pw3 == TEACHER_PASSWORD:
+    df = load_data()
     if not df.empty:
       selected_stu = st.selectbox("학생 선택", STUDENTS, key="analyze_stu")
       stu_df = df[df["학생명"] == selected_stu]
