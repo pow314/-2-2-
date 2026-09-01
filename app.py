@@ -14,13 +14,6 @@ from streamlit_gsheets import GSheetsConnection
 # ==============================================================================
 SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1c3bRcHpxWkSPbUO5kFCp2bSobwBbWiA33yegSoiQapg/edit?usp=sharing"
 
-# 🔑 Secrets에 등록된 private_key의 \\n 문자열 자동 보정 (RSA PEM 인코딩 에러 방지)
-if "connections" in st.secrets and "gsheets" in st.secrets["connections"]:
-  if "private_key" in st.secrets["connections"]["gsheets"]:
-    st.secrets["connections"]["gsheets"]["private_key"] = st.secrets[
-        "connections"
-    ]["gsheets"]["private_key"].replace("\\n", "\n")
-
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 
