@@ -71,7 +71,7 @@ STUDENTS = ["김수연", "최윤우", "주지원", "백서윤"]
 # 📚 구글 드라이브 해설 링크 설정 (선생님께서 드라이브 링크를 여기에 넣어주세요)
 # ==============================================================================
 EXPLANATION_LINKS = {
-    # 예시 형식: "📌 0021번 ~ 0050번 (30문항)": "https://drive.google.com/file/d/해설파일ID/view?usp=sharing",
+    # 예시 형식: "📌 0021번 ~ 0050번 (30문항)": "https://drive.google.com/file/d/1fzUA0SbqMgfxa2Ua23uZENzA79g1xb_p/view?usp=drive_link",
     # 아래에 필요한 범위별 구글 드라이브 링크를 입력해두시면 됩니다.
 }
 
